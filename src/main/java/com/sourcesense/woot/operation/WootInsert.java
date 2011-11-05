@@ -24,35 +24,20 @@ public class WootInsert implements WootOp {
     }
 
     /**
-     * Executes this operation to the target WootString.
+     * Inserts the character into the target WootString.
      *
      * @param target The target string affected by this operation.
      */
     @Override
     public void execute(WootString target) {
-        // TODO: This is really inefficient - just following spec.
-        /*
-        WootCharacter prev = target.get(character.getPrevious());
-        WootCharacter next = target.get(character.getNext());
-
-        int prevPos = target.getPos(prev);
-        int nextPos = target.getPos(next);
-
-        if ((nextPos - (prevPos + 1)) == 0) {
-            // There are no characters between this character's previous and
-            // next characters, so just insert it between them.
-            target.insert(character, target.getPos(next));
-        } else {
-            // TODO: There are characters in the way.
-            List<WootCharacter> chars = target.filterRange(prev, next);
-
-            int i = 1;
-            while ((i < chars.size() - 1) && compare(chars.get(i), character) < 0) {
-                i++;
-            }
-        }
-        */
-
+        // TODO: This is really inefficient - just a literal implementation of
+        // the spec.
+        // Current implementation has a worst-case runtime of O(n^3).
+        // Can get it down to O(n^2) if we keep an index of previous and next
+        // characters. This would increase the space complexity, but would still
+        // remain at O(n). However, this could easily get too large.
+        // Could then probably get runtime down to O(n) if the recursion could
+        // be elegantly eliminated.
         WootCharacter prev = target.get(character.getPrevious());
         WootCharacter next = target.get(character.getNext());
         integrateInsert(target, prev, next);
@@ -67,7 +52,7 @@ public class WootInsert implements WootOp {
             // next characters, so just insert it between them.
             target.insert(character, target.getPos(next));
         } else {
-            // TODO: There are characters in the way.
+            // There are characters in the way.
             List<WootCharacter> chars = target.filterRange(prev, next);
 
             int i = 1;
@@ -75,6 +60,7 @@ public class WootInsert implements WootOp {
                 i++;
             }
 
+            // TODO: Find a better solution than recursion.
             integrateInsert(target, chars.get(i - 1), chars.get(i));
         }
     }

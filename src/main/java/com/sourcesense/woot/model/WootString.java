@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * A com.sourcesense.woot.model.WootString is an ordered sequence of WootCharacters:
+ * A WootString is an ordered sequence of WootCharacters:
  * Cb, c1, c2, ..., c3, Ce
  * where Cb and Ce are special characters (with special identifiers) marking
  * the beginning and the end of a sequence, respectively.
