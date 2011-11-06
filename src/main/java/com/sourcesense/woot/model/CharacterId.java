@@ -26,4 +26,9 @@ public class CharacterId {
         CharacterId charId = (CharacterId) o;
         return (siteId == charId.getSiteId()) && (clock == charId.getClock());
     }
+
+    @Override
+    public String toString() {
+        return siteId + ":" + clock;
+    }
 }

@@ -1,7 +1,9 @@
 package com.sourcesense.woot.model;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * A WootString is an ordered sequence of WootCharacters:
@@ -12,13 +14,21 @@ import java.util.List;
 public class WootString {
 
     private List<WootCharacter> sequence;
+    public Map<String, Integer> cache;
 
     public WootString() {
         this.sequence = new ArrayList<WootCharacter>(2);
+        this.cache = new HashMap<String, Integer>(2);
 
         // Create special start and end characters.
-        this.sequence.add(WootCharacter.createBeginning());
-        this.sequence.add(WootCharacter.createEnd());
+//        this.sequence.add(WootCharacter.createBeginning());
+//        this.sequence.add(WootCharacter.createEnd());
+        WootCharacter start = WootCharacter.createBeginning();
+        WootCharacter end = WootCharacter.createEnd();
+        this.sequence.add(start);
+        this.sequence.add(end);
+        this.cache.put(start.getId().toString(), 0);
+        this.cache.put(end.getId().toString(), 1);
     }
 
     /**
@@ -82,6 +92,19 @@ public class WootString {
     public void insert(WootCharacter c, int index) {
         // TODO: Check for insertion before or after special chars?
         sequence.add(index, c);
+
+        // Update cache.
+        cache.put(c.getId().toString(), index);
+        updateCache(index);
+    }
+
+    private void updateCache(int index) {
+        for (int i = index + 1; i < sequence.size(); i++) {
+            WootCharacter c = get(i);
+            String key = c.getId().toString();
+            int oldIndex = cache.get(key);
+            cache.put(key, oldIndex + 1);
+        }
     }
 
     /**
@@ -183,4 +206,61 @@ public class WootString {
         result.add(next);
         return result;
     }
+
+    public List<WootCharacter> fastFilterRange(WootCharacter prev, WootCharacter next) {
+        // TODO: Check prev precedes next.
+        List<WootCharacter> result = new ArrayList<WootCharacter>();
+        result.add(prev);
+
+        int prevIndex = cache.get(prev.getId().toString());
+        int nextIndex = cache.get(next.getId().toString());
+
+        for (int i = prevIndex + 1; i < nextIndex; i++) {
+            WootCharacter c = get(i);
+            int pi = cache.get(c.getPrevious().toString());
+            int ni = cache.get(c.getNext().toString());
+
+            if (pi <= prevIndex && nextIndex <= ni) {
+                result.add(c);
+            }
+        }
+
+        result.add(next);
+        return result;
+    }
+
+    /*
+    public List<WootCharacter> fastFilterRange(WootCharacter prev, WootCharacter next) {
+        // TODO: Check prev precedes next.
+        List<WootCharacter> result = new ArrayList<WootCharacter>();
+        result.add(prev);
+
+        // Cache all character positions first. Takes O(n) time and an extra
+        // O(n) space - but means all position lookups will be O(1).
+        Map<String, Integer> cache = new HashMap<String, Integer>(sequence.size());
+        for (int i = 0; i < sequence.size(); i++) {
+            WootCharacter wc = sequence.get(i);
+
+            // Get id to use as key. Eg. "727382:2323218478934"
+            String key = wc.getId().toString();
+            cache.put(key, i);
+        }
+
+        int prevIndex = cache.get(prev.getId().toString());
+        int nextIndex = cache.get(next.getId().toString());
+
+        for (int i = prevIndex + 1; i < nextIndex; i++) {
+            WootCharacter c = get(i);
+            int pi = cache.get(c.getPrevious().toString());
+            int ni = cache.get(c.getNext().toString());
+
+            if (pi <= prevIndex && nextIndex <= ni) {
+                result.add(c);
+            }
+        }
+
+        result.add(next);
+        return result;
+    }
+    */
 }

@@ -5,6 +5,7 @@ import com.sourcesense.woot.model.WootString;
 import com.sourcesense.woot.validation.PreconditionValidator;
 
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.Arrays;
@@ -215,6 +216,19 @@ public class WootInsertTest {
         op = createOp(createCharacter(6, 0L, true, '6', 1, 0L, 3, 0L));
         op.execute(target);
         assertEquals("1206354", target.value());
+    }
+
+    @Ignore
+    @Test
+    public void tempStressTest() throws Exception {
+        assertEquals("", target.value());
+
+        for (int i = 0; i < 20000; i++) {
+            op = new WootInsert(createCharacter(0, (long) i, true, 'a', SPECIAL, START, SPECIAL, END));
+            op.execute(target);
+        }
+
+        assertEquals("derp", target.value());
     }
 
     private WootOp createOp(WootCharacter c) throws Exception {
