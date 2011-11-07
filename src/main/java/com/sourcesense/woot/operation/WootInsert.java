@@ -108,7 +108,7 @@ public class WootInsert implements WootOp {
         if ((nextPos - (prevPos + 1)) == 0) {
             // There are no characters between this character's previous and
             // next characters, so just insert it between them.
-            target.insert(character, target.getPos(next));
+            target.insert(character, nextPos);
         } else {
             // There are characters in the way.
             List<WootCharacter> chars = fastFilterRange(target, prev, next);
