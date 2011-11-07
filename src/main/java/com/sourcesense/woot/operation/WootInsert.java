@@ -1,15 +1,12 @@
 package com.sourcesense.woot.operation;
 
-import com.sourcesense.woot.model.CharacterId;
+import com.sourcesense.woot.model.WootId;
 import com.sourcesense.woot.model.WootCharacter;
 import com.sourcesense.woot.model.WootString;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
-import static com.sourcesense.woot.model.WootCharacter.END;
 import static com.sourcesense.woot.model.WootCharacter.SPECIAL;
 import static com.sourcesense.woot.model.WootCharacter.START;
 
@@ -20,11 +17,14 @@ public class WootInsert implements WootOp {
 
     private WootCharacter character;
     private WootOpType type;
-    private Map<String,Integer> cache;
+    private WootId previous;
+    private WootId next;
 
-    public WootInsert(WootCharacter character) {
+    public WootInsert(WootCharacter character, WootId previous, WootId next) {
         this.character = character;
         this.type = WootOpType.INSERT;
+        this.previous = previous;
+        this.next = next;
     }
 
     /**
@@ -34,36 +34,15 @@ public class WootInsert implements WootOp {
      */
     @Override
     public void execute(WootString target) {
-        // TODO: This is really inefficient - just a literal implementation of
-        // the spec.
-        // Current implementation has a worst-case runtime of O(n^3).
-        // Can get it down to O(n^2) if we keep an index of previous and next
-        // characters. This would increase the space complexity, but would still
-        // remain at O(n). However, this could easily get too large.
-        // An alternative could be to have a lookup table for each possible
-        // character, i.e. fixed upper limit of 255, independent of the number
-        // of characters in the string.
-        // Could then probably get runtime down to O(n) if the recursion could
-        // be elegantly eliminated.
-//        WootCharacter prev = target.get(character.getPrevious());
-//        WootCharacter next = target.get(character.getNext());
-        //integrateInsert(target, prev, next);
-        //fasterIntegrateInsert(target);
-        evenFasterInsert(target);
+        // TODO: This can still be improved.
+        // This uses the optimized WOOT spec insert algorithm. Improves worst
+        // case runtime from O(n^3) to O(n^2).
+        integrateInsert(target, previous, next);
     }
 
-    private void evenFasterInsert(WootString target) {
-        int pi = target.cache.get(character.getPrevious().toString());
-        int ni = target.cache.get(character.getNext().toString());
-        WootCharacter prev = target.get(pi);
-        WootCharacter next = target.get(ni);
-
-        fastRecursiveStep(target, prev, next);
-    }
-
-    private void fastRecursiveStep(WootString target, WootCharacter prev, WootCharacter next) {
-        int prevPos = target.cache.get(prev.getId().toString());
-        int nextPos = target.cache.get(next.getId().toString());
+    private void integrateInsert(WootString target, WootId prev, WootId next) {
+        int prevPos = target.getPos(prev);
+        int nextPos = target.getPos(next);
 
         if ((nextPos - (prevPos + 1)) == 0) {
             // There are no characters between this character's previous and
@@ -71,98 +50,43 @@ public class WootInsert implements WootOp {
             target.insert(character, nextPos);
         } else {
             // There are characters in the way.
-            List<WootCharacter> chars = target.fastFilterRange(prev, next);
+            int minDegree = findMinDegree(target, prevPos, nextPos);
+            List<WootCharacter> filtered = filter(target, prevPos, nextPos, minDegree);
 
             int i = 1;
-            while ((i < chars.size() - 1) && compare(chars.get(i), character) < 0) {
+            while ((i < filtered.size() - 1) && compare(filtered.get(i), character) < 0) {
                 i++;
             }
 
-            fastRecursiveStep(target, chars.get(i - 1), chars.get(i));
+            integrateInsert(target, filtered.get(i-1).getId(), filtered.get(i).getId());
         }
     }
 
-    private void fasterIntegrateInsert(WootString target) {
-        // Build character position cache here and update as necessary.
-        cache = new HashMap<String, Integer>(target.length());
-        for (int i = 0; i < target.length(); i++) {
-            WootCharacter wc = target.get(i);
+    private int findMinDegree(WootString target, int prevPos, int nextPos) {
+        int minDegree = target.get(prevPos + 1).getDegree();
 
-            // Get id to use as key. Eg. "727382:2323218478934"
-            String key = wc.getId().toString();
-            cache.put(key, i);
+        for (int i = prevPos + 2; i < nextPos; i++) {
+            int d = target.get(i).getDegree();
+            if (d < minDegree) minDegree = d;
         }
 
-        int pi = cache.get(character.getPrevious().toString());
-        int ni = cache.get(character.getNext().toString());
-        WootCharacter prev = target.get(pi);
-        WootCharacter next = target.get(ni);
-
-        recursiveStep(target, prev, next);
+        return minDegree;
     }
 
-    private void recursiveStep(WootString target, WootCharacter prev, WootCharacter next) {
-        int prevPos = cache.get(prev.getId().toString());
-        int nextPos = cache.get(next.getId().toString());
-
-        if ((nextPos - (prevPos + 1)) == 0) {
-            // There are no characters between this character's previous and
-            // next characters, so just insert it between them.
-            target.insert(character, target.getPos(next));
-        } else {
-            // There are characters in the way.
-            List<WootCharacter> chars = fastFilterRange(target, prev, next);
-
-            int i = 1;
-            while ((i < chars.size() - 1) && compare(chars.get(i), character) < 0) {
-                i++;
-            }
-
-            recursiveStep(target, chars.get(i - 1), chars.get(i));
-        }
-    }
-
-    private List<WootCharacter> fastFilterRange(WootString target, WootCharacter prev, WootCharacter next) {
+    private List<WootCharacter> filter(WootString target, int prevPos, int nextPos, int minDegree) {
         List<WootCharacter> result = new ArrayList<WootCharacter>();
-        result.add(prev);
+        result.add(target.get(prevPos));
 
-        int prevIndex = cache.get(prev.getId().toString());
-        int nextIndex = cache.get(next.getId().toString());
-
-        for (int i = prevIndex + 1; i < nextIndex; i++) {
+        for (int i = prevPos + 1; i < nextPos; i++) {
             WootCharacter c = target.get(i);
-            int pi = cache.get(c.getPrevious().toString());
-            int ni = cache.get(c.getNext().toString());
 
-            if (pi <= prevIndex && nextIndex <= ni) {
+            if (c.getDegree() == minDegree) {
                 result.add(c);
             }
         }
 
-        result.add(next);
+        result.add(target.get(nextPos));
         return result;
-    }
-
-    private void integrateInsert(WootString target, WootCharacter prev, WootCharacter next) {
-        int prevPos = target.getPos(prev);
-        int nextPos = target.getPos(next);
-
-        if ((nextPos - (prevPos + 1)) == 0) {
-            // There are no characters between this character's previous and
-            // next characters, so just insert it between them.
-            target.insert(character, target.getPos(next));
-        } else {
-            // There are characters in the way.
-            List<WootCharacter> chars = target.filterRange(prev, next);
-
-            int i = 1;
-            while ((i < chars.size() - 1) && compare(chars.get(i), character) < 0) {
-                i++;
-            }
-
-            // TODO: Find a better solution than recursion.
-            integrateInsert(target, chars.get(i - 1), chars.get(i));
-        }
     }
 
     /**
@@ -181,9 +105,17 @@ public class WootInsert implements WootOp {
         return character;
     }
 
+    public WootId getPreviousChar() {
+        return previous;
+    }
+
+    public WootId getNextChar() {
+        return next;
+    }
+
     private int compare(WootCharacter c1, WootCharacter c2) {
-        CharacterId cid1 = c1.getId();
-        CharacterId cid2 = c2.getId();
+        WootId cid1 = c1.getId();
+        WootId cid2 = c2.getId();
 
         if (cid1.getSiteId() == SPECIAL) {
             if (cid1.getClock() == START) return -1;

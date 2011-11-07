@@ -1,20 +1,17 @@
 package com.sourcesense.woot.operation;
 
 import com.sourcesense.woot.model.WootCharacter;
+import com.sourcesense.woot.model.WootId;
 import com.sourcesense.woot.model.WootString;
 import com.sourcesense.woot.validation.PreconditionValidator;
 
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.Arrays;
 import java.util.List;
 
-import static com.sourcesense.woot.model.WootCharacter.END;
-import static com.sourcesense.woot.model.WootCharacter.SPECIAL;
-import static com.sourcesense.woot.model.WootCharacter.START;
-import static com.sourcesense.woot.model.WootCharacter.createCharacter;
+import static com.sourcesense.woot.model.WootCharacter.*;
 import static junit.framework.Assert.assertEquals;
 import static junit.framework.Assert.assertTrue;
 
@@ -32,18 +29,19 @@ public class WootInsertTest {
 
     @Test
     public void getOperationCharacter() throws Exception {
-        op = new WootInsert(createCharacter(1, 1L, true, 'a'));
+        op = new WootInsert(createCharacter(1, 1L, 'a', 1, true), null, null);
 
         WootCharacter c = op.getChar();
         assertEquals(1, c.getId().getSiteId());
         assertEquals(1L, c.getId().getClock());
         assertTrue(c.isVisible());
         assertEquals('a', c.getValue());
+        assertEquals(1, c.getDegree());
     }
 
     @Test
     public void getOperationType() throws Exception {
-        op = new WootInsert(createCharacter(1, 1L, true, 'a'));
+        op = new WootInsert(createCharacter(1, 1L, 'a', 1, true), null, null);
 
         assertEquals(WootOpType.INSERT, op.getType());
     }
@@ -52,106 +50,125 @@ public class WootInsertTest {
     public void executeSimpleInsertIntoEmptyString() throws Exception {
         assertEquals("", target.value());
 
-        op = createOp(createCharacter(1, 1L, true, 'a', SPECIAL, START, SPECIAL, END));
+        op = createValidOp(createCharacter(1, 1L, 'a', 1, true), SPECIAL, START, SPECIAL, END);
         op.execute(target);
         assertEquals("a", target.value());
+        assertEquals("[a]", target.toString());
     }
 
     @Test
     public void executeSimpleInsertIntoLongString() throws Exception {
-        target.insert(createCharacter(2, 1L, true, 'a'), 1);
-        target.insert(createCharacter(2, 2L, true, 'b'), 2);
-        target.insert(createCharacter(2, 3L, true, 'c'), 3);
-        target.insert(createCharacter(2, 4L, false, 'z'), 4);
-        target.insert(createCharacter(2, 5L, true, 'd'), 5);
-        target.insert(createCharacter(2, 6L, true, 'e'), 6);
+        target.insert(createCharacter(2, 1L, 'a', 1, true), 1);
+        target.insert(createCharacter(2, 2L, 'b', 1, true), 2);
+        target.insert(createCharacter(2, 3L, 'c', 1, true), 3);
+        target.insert(createCharacter(2, 4L, 'z', 1, false), 4);
+        target.insert(createCharacter(2, 5L, 'd', 1, true), 5);
+        target.insert(createCharacter(2, 6L, 'e', 1, true), 6);
         assertEquals("abcde", target.value());
+        assertEquals("[abc(z)de]", target.toString());
 
-        op = createOp(createCharacter(1, 1L, true, '1', 2, 1L, 2, 2L));
+        op = createValidOp(createCharacter(1, 1L, '1', 2, true), 2, 1L, 2, 2L);
         op.execute(target);
         assertEquals("a1bcde", target.value());
+        assertEquals("[a1bc(z)de]", target.toString());
 
-        op = createOp(createCharacter(1, 2L, true, '2', 2, 4L, 2, 5L));
+        op = createValidOp(createCharacter(1, 2L, '2', 2, true), 2, 4L, 2, 5L);
         op.execute(target);
         assertEquals("a1bc2de", target.value());
+        assertEquals("[a1bc(z)2de]", target.toString());
     }
 
     @Test
     public void executeOrderedInsertIntoShortStringAtSite1() throws Exception {
         // From Example 1 in Section 3.5 of WOOT spec.
         assertEquals("", target.value());
+        assertEquals("[]", target.toString());
 
         // Operation 1
-        op = createOp(createCharacter(1, 0L, true, '1', SPECIAL, START, SPECIAL, END));
+        op = createValidOp(createCharacter(1, 0L, '1', 1, true), SPECIAL, START, SPECIAL, END);
         op.execute(target);
         assertEquals("1", target.value());
+        assertEquals("[1]", target.toString());
 
         // Operation 2
-        op = createOp(createCharacter(2, 0L, true, '2', SPECIAL, START, SPECIAL, END));
+        op = createValidOp(createCharacter(2, 0L, '2', 1, true), SPECIAL, START, SPECIAL, END);
         op.execute(target);
         assertEquals("12", target.value());
+        assertEquals("[12]", target.toString());
 
         // Operation 3
-        op = createOp(createCharacter(3, 0L, true, '3', SPECIAL, START, 1, 0L));
+        op = createValidOp(createCharacter(3, 0L, '3', 2, true), SPECIAL, START, 1, 0L);
         op.execute(target);
         assertEquals("312", target.value());
+        assertEquals("[312]", target.toString());
 
         // Operation 4
-        op = createOp(createCharacter(3, 1L, true, '4', 1, 0L, SPECIAL, END));
+        op = createValidOp(createCharacter(3, 1L, '4', 2, true), 1, 0L, SPECIAL, END);
         op.execute(target);
         assertEquals("3124", target.value());
+        assertEquals("[3124]", target.toString());
     }
 
     @Test
     public void executeOrderedInsertIntoShortStringAtSite2() throws Exception {
         // From Example 1 in Section 3.5 of WOOT spec.
         assertEquals("", target.value());
+        assertEquals("[]", target.toString());
 
         // Operation 2
-        op = createOp(createCharacter(2, 0L, true, '2', SPECIAL, START, SPECIAL, END));
+        op = createValidOp(createCharacter(2, 0L, '2', 1, true), SPECIAL, START, SPECIAL, END);
         op.execute(target);
         assertEquals("2", target.value());
+        assertEquals("[2]", target.toString());
 
         // Operation 1
-        op = createOp(createCharacter(1, 0L, true, '1', SPECIAL, START, SPECIAL, END));
+        op = createValidOp(createCharacter(1, 0L, '1', 1, true), SPECIAL, START, SPECIAL, END);
         op.execute(target);
         assertEquals("12", target.value());
+        assertEquals("[12]", target.toString());
 
         // Operation 3
-        op = createOp(createCharacter(3, 0L, true, '3', SPECIAL, START, 1, 0L));
+        op = createValidOp(createCharacter(3, 0L, '3', 2, true), SPECIAL, START, 1, 0L);
         op.execute(target);
         assertEquals("312", target.value());
+        assertEquals("[312]", target.toString());
 
         // Operation 4
-        op = createOp(createCharacter(3, 1L, true, '4', 1, 0L, SPECIAL, END));
+        op = createValidOp(createCharacter(3, 1L, '4', 2, true), 1, 0L, SPECIAL, END);
         op.execute(target);
         assertEquals("3124", target.value());
+        assertEquals("[3124]", target.toString());
     }
 
     @Test
     public void executeOrderedInsertIntoShortStringAtSite3() throws Exception {
         // From Example 1 in Section 3.5 of WOOT spec.
         assertEquals("", target.value());
+        assertEquals("[]", target.toString());
 
         // Operation 1
-        op = createOp(createCharacter(1, 0L, true, '1', SPECIAL, START, SPECIAL, END));
+        op = createValidOp(createCharacter(1, 0L, '1', 1, true), SPECIAL, START, SPECIAL, END);
         op.execute(target);
         assertEquals("1", target.value());
+        assertEquals("[1]", target.toString());
 
         // Operation 3
-        op = createOp(createCharacter(3, 0L, true, '3', SPECIAL, START, 1, 0L));
+        op = createValidOp(createCharacter(3, 0L, '3', 2, true), SPECIAL, START, 1, 0L);
         op.execute(target);
         assertEquals("31", target.value());
+        assertEquals("[31]", target.toString());
 
         // Operation 4
-        op = createOp(createCharacter(3, 1L, true, '4', 1, 0L, SPECIAL, END));
+        op = createValidOp(createCharacter(3, 1L, '4', 2, true), 1, 0L, SPECIAL, END);
         op.execute(target);
         assertEquals("314", target.value());
+        assertEquals("[314]", target.toString());
 
         // Operation 2
-        op = createOp(createCharacter(2, 0L, true, '2', SPECIAL, START, SPECIAL, END));
+        op = createValidOp(createCharacter(2, 0L, '2', 1, true), SPECIAL, START, SPECIAL, END);
         op.execute(target);
         assertEquals("3124", target.value());
+        assertEquals("[3124]", target.toString());
     }
 
     @Test
@@ -159,14 +176,15 @@ public class WootInsertTest {
         // From Example 2 in Section 3.5 of WOOT spec.
         // Seven sites each inserting a character containing its identifier.
         assertEquals("", target.value());
+        assertEquals("[]", target.toString());
 
         // First 5 characters have already been received.
-        List<WootInsert> ops = Arrays.asList(
-                new WootInsert(createCharacter(0, 0L, true, '0', SPECIAL, START, SPECIAL, END)),
-                new WootInsert(createCharacter(1, 0L, true, '1', SPECIAL, START, 0, 0L)),
-                new WootInsert(createCharacter(2, 0L, true, '2', SPECIAL, START, 0, 0L)),
-                new WootInsert(createCharacter(3, 0L, true, '3', 0, 0L, SPECIAL, END)),
-                new WootInsert(createCharacter(4, 0L, true, '4', 0, 0L, SPECIAL, END))
+        List<WootOp> ops = Arrays.asList(
+                createOp(createCharacter(0, 0L, '0', 1, true), SPECIAL, START, SPECIAL, END),
+                createOp(createCharacter(1, 0L, '1', 2, true), SPECIAL, START, 0, 0L),
+                createOp(createCharacter(2, 0L, '2', 2, true), SPECIAL, START, 0, 0L),
+                createOp(createCharacter(3, 0L, '3', 2, true), 0, 0L, SPECIAL, END),
+                createOp(createCharacter(4, 0L, '4', 2, true), 0, 0L, SPECIAL, END)
         );
 
         for (WootOp wootOp : ops) {
@@ -175,15 +193,18 @@ public class WootInsertTest {
         }
 
         assertEquals("12034", target.value());
+        assertEquals("[12034]", target.toString());
 
         // Receive 6 then 5.
-        op = createOp(createCharacter(6, 0L, true, '6', 1, 0L, 3, 0L));
+        op = createValidOp(createCharacter(6, 0L, '6', 3, true), 1, 0L, 3, 0L);
         op.execute(target);
         assertEquals("120634", target.value());
+        assertEquals("[120634]", target.toString());
 
-        op = createOp(createCharacter(5, 0L, true, '5', 2, 0L, 4, 0L));
+        op = createValidOp(createCharacter(5, 0L, '5', 3, true), 2, 0L, 4, 0L);
         op.execute(target);
         assertEquals("1206354", target.value());
+        assertEquals("[1206354]", target.toString());
     }
 
     @Test
@@ -191,14 +212,15 @@ public class WootInsertTest {
         // From Example 2 in Section 3.5 of WOOT spec.
         // Seven sites each inserting a character containing its identifier.
         assertEquals("", target.value());
+        assertEquals("[]", target.toString());
 
         // First 5 characters have already been received.
-        List<WootInsert> ops = Arrays.asList(
-                new WootInsert(createCharacter(0, 0L, true, '0', SPECIAL, START, SPECIAL, END)),
-                new WootInsert(createCharacter(1, 0L, true, '1', SPECIAL, START, 0, 0L)),
-                new WootInsert(createCharacter(2, 0L, true, '2', SPECIAL, START, 0, 0L)),
-                new WootInsert(createCharacter(3, 0L, true, '3', 0, 0L, SPECIAL, END)),
-                new WootInsert(createCharacter(4, 0L, true, '4', 0, 0L, SPECIAL, END))
+        List<WootOp> ops = Arrays.asList(
+                createOp(createCharacter(0, 0L, '0', 1, true), SPECIAL, START, SPECIAL, END),
+                createOp(createCharacter(1, 0L, '1', 2, true), SPECIAL, START, 0, 0L),
+                createOp(createCharacter(2, 0L, '2', 2, true), SPECIAL, START, 0, 0L),
+                createOp(createCharacter(3, 0L, '3', 2, true), 0, 0L, SPECIAL, END),
+                createOp(createCharacter(4, 0L, '4', 2, true), 0, 0L, SPECIAL, END)
         );
 
         for (WootOp wootOp : ops) {
@@ -207,32 +229,57 @@ public class WootInsertTest {
         }
 
         assertEquals("12034", target.value());
+        assertEquals("[12034]", target.toString());
 
         // Receive 5 then 6.
-        op = createOp(createCharacter(5, 0L, true, '5', 2, 0L, 4, 0L));
+        op = createValidOp(createCharacter(5, 0L, '5', 3, true), 2, 0L, 4, 0L);
         op.execute(target);
         assertEquals("120354", target.value());
+        assertEquals("[120354]", target.toString());
 
-        op = createOp(createCharacter(6, 0L, true, '6', 1, 0L, 3, 0L));
+        op = createValidOp(createCharacter(6, 0L, '6', 3, true), 1, 0L, 3, 0L);
         op.execute(target);
         assertEquals("1206354", target.value());
+        assertEquals("[1206354]", target.toString());
     }
 
-    @Ignore
     @Test
     public void tempStressTest() throws Exception {
         assertEquals("", target.value());
 
-        for (int i = 0; i < 20000; i++) {
-            op = new WootInsert(createCharacter(0, (long) i, true, 'a', SPECIAL, START, SPECIAL, END));
+        int max = 10000;
+
+        for (int i = 0; i < max; i++) {
+            op = createValidOp(createCharacter(0, (long) i, 'a', 1, true), SPECIAL, START, SPECIAL, END);
             op.execute(target);
         }
 
-        assertEquals("derp", target.value());
+        assertEquals(max + 2, target.length());
     }
 
-    private WootOp createOp(WootCharacter c) throws Exception {
-        WootOp operation = new WootInsert(c);
+    @Test
+    public void tempSequentialStressTest() throws Exception {
+        assertEquals("", target.value());
+
+        int max = 10000;
+
+        op = createValidOp(createCharacter(0, 0L, 'a', 1, true), SPECIAL, START, SPECIAL, END);
+        op.execute(target);
+
+        for (int i = 1; i < max; i++) {
+            op = createValidOp(createCharacter(0, (long) i, 'a', 1, true), 0, (long) i - 1, SPECIAL, END);
+            op.execute(target);
+        }
+
+        assertEquals(max + 2, target.length());
+    }
+
+    private WootOp createOp(WootCharacter c, int pi, long pc, int ni, long nc) throws Exception {
+        return new WootInsert(c, new WootId(pi, pc), new WootId(ni, nc));
+    }
+
+    private WootOp createValidOp(WootCharacter c, int pi, long pc, int ni, long nc) throws Exception {
+        WootOp operation = new WootInsert(c, new WootId(pi, pc), new WootId(ni, nc));
         assertTrue(validator.isExecutable(operation, target));
         return operation;
     }

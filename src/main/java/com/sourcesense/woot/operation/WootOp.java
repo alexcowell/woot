@@ -9,7 +9,7 @@ import com.sourcesense.woot.model.WootString;
 public interface WootOp {
 
     /**
-     * Executes this operation to the target WootString.
+     * Executes this operation on the target WootString.
      *
      * @param target The target string affected by this operation.
      */

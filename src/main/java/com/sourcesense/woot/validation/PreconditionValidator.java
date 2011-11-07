@@ -2,6 +2,8 @@ package com.sourcesense.woot.validation;
 
 import com.sourcesense.woot.model.WootCharacter;
 import com.sourcesense.woot.model.WootString;
+import com.sourcesense.woot.operation.WootDelete;
+import com.sourcesense.woot.operation.WootInsert;
 import com.sourcesense.woot.operation.WootOp;
 
 import static com.sourcesense.woot.model.WootCharacter.SPECIAL;
@@ -26,14 +28,15 @@ public class PreconditionValidator {
      * @return True if the operation satisfies the preconditions. False otherwise.
      */
     public boolean isExecutable(WootOp op, WootString string) {
-        WootCharacter c = op.getChar();
 
         switch (op.getType()) {
             case DELETE:
+                WootCharacter c = op.getChar();
                 return (c.getId().getSiteId() != SPECIAL) && string.contains(c);
             case INSERT:
-                return string.contains(c.getPrevious())
-                        && string.contains(c.getNext());
+                WootInsert insOp = (WootInsert) op;
+                return string.contains(insOp.getPreviousChar())
+                        && string.contains(insOp.getNextChar());
         }
 
         return false;

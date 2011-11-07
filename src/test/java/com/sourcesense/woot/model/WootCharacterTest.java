@@ -1,8 +1,5 @@
 package com.sourcesense.woot.model;
 
-import com.sourcesense.woot.model.CharacterId;
-import com.sourcesense.woot.model.WootCharacter;
-
 import org.junit.Before;
 import org.junit.Test;
 
@@ -16,8 +13,7 @@ public class WootCharacterTest {
 
     @Before
     public void setUp() throws Exception {
-        c = new WootCharacter(new CharacterId(123, 21L), true, 'x',
-                new CharacterId(100, 15L), new CharacterId(200, 345L));
+        c = new WootCharacter(new WootId(123, 21L), 'x', 1, true);
     }
 
     @Test
@@ -43,14 +39,7 @@ public class WootCharacterTest {
     }
 
     @Test
-    public void characterKnowsPreviousCharacter() throws Exception {
-        assertEquals(100, c.getPrevious().getSiteId());
-        assertEquals(15L, c.getPrevious().getClock());
-    }
-
-    @Test
-    public void characterKnowsNextCharacter() throws Exception {
-        assertEquals(200, c.getNext().getSiteId());
-        assertEquals(345L, c.getNext().getClock());
+    public void characterHasDegree() throws Exception {
+        assertEquals(1, c.getDegree());
     }
 }

@@ -3,9 +3,6 @@ package com.sourcesense.woot.model;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.util.Arrays;
-import java.util.List;
-
 import static com.sourcesense.woot.model.WootCharacter.*;
 import static junit.framework.Assert.assertEquals;
 import static junit.framework.Assert.assertFalse;
@@ -44,37 +41,37 @@ public class WootStringTest {
 
     @Test
     public void insertingACharacterShouldIncreaseLengthByOne() throws Exception {
-        WootCharacter c = createCharacter(101, 10L, true, 'a');
+        WootCharacter c = createCharacter(101, 10L, 'a', 1, true);
         string.insert(c, 1);
         assertEquals(3, string.length());
     }
 
     @Test
     public void insertingACharacterShouldBeInCorrectPosition() throws Exception {
-        WootCharacter c = createCharacter(101, 10L, true, 'a');
+        WootCharacter c = createCharacter(101, 10L, 'a', 1, true);
         string.insert(c, 1);
         assertEquals(c, string.get(1));
     }
 
     @Test
     public void getThePositionOfACharacterInAString() throws Exception {
-        WootCharacter c = createCharacter(101, 10L, true, 'a');
+        WootCharacter c = createCharacter(101, 10L, 'a', 1, true);
         string.insert(c, 1);
         assertEquals(1, string.getPos(c));
     }
 
     @Test
     public void gettingPositionOfNonExistentCharacterReturnsMinusOne() throws Exception {
-        WootCharacter c = createCharacter(101, 10L, true, 'a');
+        WootCharacter c = createCharacter(101, 10L, 'a', 1, true);
         assertEquals(-1, string.getPos(c));
     }
 
     @Test
     public void valueOfStringShouldOnlyOutputVisibleCharacters() throws Exception {
-        string.insert(createCharacter(101, 10L, true, 'a'), 1);
-        string.insert(createCharacter(101, 11L, true, 'b'), 2);
-        string.insert(createCharacter(101, 12L, false, '1'), 3);
-        string.insert(createCharacter(101, 13L, true, 'c'), 4);
+        string.insert(createCharacter(101, 10L, 'a', 1, true), 1);
+        string.insert(createCharacter(101, 11L, 'b', 1, true), 2);
+        string.insert(createCharacter(101, 12L, '1', 1, false), 3);
+        string.insert(createCharacter(101, 13L, 'c', 1, true), 4);
 
         assertEquals("abc", string.value());
     }
@@ -86,7 +83,7 @@ public class WootStringTest {
 
     @Test
     public void callingCharIsVisibleForAVisibleCharShouldBeTrue() throws Exception {
-        string.insert(createCharacter(101, 10L, true, 'a'), 1);
+        string.insert(createCharacter(101, 10L, 'a', 1, true), 1);
         assertTrue(string.charIsVisible(1));
     }
 
@@ -107,7 +104,7 @@ public class WootStringTest {
 
     @Test
     public void callingContainsForNonExistentCharReturnsFalse() throws Exception {
-        assertFalse(string.contains(createCharacter(101, 10L, true, 'a')));
+        assertFalse(string.contains(createCharacter(101, 10L, 'a', 1, true)));
     }
 
     @Test
@@ -117,12 +114,12 @@ public class WootStringTest {
 
     @Test
     public void callingContainsForNonExistentIdReturnsFalse() throws Exception {
-        assertFalse(string.contains(new CharacterId(41, 4L)));
+        assertFalse(string.contains(new WootId(41, 4L)));
     }
 
     @Test
     public void getVisibleCharAtPosition() throws Exception {
-        WootCharacter c = createCharacter(101, 10L, true, 'a');
+        WootCharacter c = createCharacter(101, 10L, 'a', 1, true);
 
         string.insert(c, 1);
 
@@ -131,12 +128,12 @@ public class WootStringTest {
 
     @Test
     public void getCharacterWithRespectToMultipleVisibleCharacters() throws Exception {
-        WootCharacter c = createCharacter(101, 10L, true, 'a');
+        WootCharacter c = createCharacter(101, 10L, 'a', 1, true);
 
-        string.insert(createCharacter(110, 10L, false, 'h'), 1);
-        string.insert(createCharacter(100, 10L, true, '1'), 2);
-        string.insert(createCharacter(101, 10L, true, 'a'), 3);
-        string.insert(createCharacter(106, 10L, true, '2'), 4);
+        string.insert(createCharacter(110, 10L, 'h', 1, false), 1);
+        string.insert(createCharacter(100, 10L, '1', 1, true), 2);
+        string.insert(createCharacter(101, 10L, 'a', 1, true), 3);
+        string.insert(createCharacter(106, 10L, '2', 1, true), 4);
 
         assertEquals(c, string.getVisibleCharAt(1));
     }
@@ -148,36 +145,29 @@ public class WootStringTest {
 
     @Test
     public void getPresentCharacterById() throws Exception {
-        WootCharacter c = createCharacter(1, 1L, true, 'a');
+        WootCharacter c = createCharacter(1, 1L, 'a', 1, true);
         string.insert(c, 1);
-        assertEquals(c, string.get(new CharacterId(1, 1L)));
+        assertEquals(c, string.get(new WootId(1, 1L)));
     }
 
     @Test
     public void getNonExistentCharByIdReturnsNull() throws Exception {
-        assertEquals(null, string.get(new CharacterId(10, 23L)));
+        assertEquals(null, string.get(new WootId(10, 23L)));
     }
 
     @Test
-    public void filterCharacters() throws Exception {
-        List<WootCharacter> chars = Arrays.asList(
-            createCharacter(100, 1L, true, 'a', SPECIAL, START, SPECIAL, END),
-            createCharacter(100, 3L, true, 'b', 100, 1L, 100, 2L),
-            createCharacter(100, 4L, true, 'c', 100, 3L, 100, 2L),
-            createCharacter(100, 2L, true, 'd', 100, 1L, SPECIAL, END)
-        );
+    public void getPositionByIdOfExistingCharacter() throws Exception {
+        assertEquals(0, string.getPos(new WootId(SPECIAL, START)));
+    }
 
-        string.insert(chars.get(0), 1);
-        string.insert(chars.get(1), 2);
-        string.insert(chars.get(2), 3);
-        string.insert(chars.get(3), 4);
-        assertEquals("abcd", string.value());
-
-        List<WootCharacter> filtered = string.filterRange(chars.get(0), chars.get(3));
-        assertEquals(3, filtered.size());
-        assertTrue(filtered.contains(chars.get(0)));
-        assertTrue(filtered.contains(chars.get(1)));
-        assertTrue(!filtered.contains(chars.get(2)));
-        assertTrue(filtered.contains(chars.get(3)));
+    @Test
+    public void toStringContainsHiddenCharacters() throws Exception {
+        string.insert(createCharacter(110, 10L, 'h', 1, false), 1);
+        string.insert(createCharacter(100, 10L, '1', 1, true), 2);
+        string.insert(createCharacter(101, 10L, 'a', 1, true), 3);
+        string.insert(createCharacter(106, 10L, '2', 1, true), 4);
+        string.insert(createCharacter(107, 10L, 'c', 1, true), 5);
+        assertEquals("1a2c", string.value());
+        assertEquals("[(h)1a2c]", string.toString());
     }
 }

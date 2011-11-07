@@ -1,11 +1,11 @@
 package com.sourcesense.woot.model;
 
-public class CharacterId {
+public class WootId {
 
     private int siteId;
     private long clock;
 
-    public CharacterId(int siteId, long clock) {
+    public WootId(int siteId, long clock) {
         this.siteId = siteId;
         this.clock = clock;
     }
@@ -21,9 +21,9 @@ public class CharacterId {
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
-        if (o == null || !(o instanceof CharacterId)) return false;
+        if (o == null || !(o instanceof WootId)) return false;
 
-        CharacterId charId = (CharacterId) o;
+        WootId charId = (WootId) o;
         return (siteId == charId.getSiteId()) && (clock == charId.getClock());
     }
 

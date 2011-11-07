@@ -17,7 +17,12 @@ public class WootDelete implements WootOp {
     }
 
     /**
-     * Executes this operation to the target WootString.
+     * Executes a delete operation on the target WootString. The character
+     * itself isn't actually delete but rather left as a tombstone. This is so
+     * that future or concurrent operations using this character as a reference
+     * will still be able to be executed.
+     *
+     * Runs in O(n).
      *
      * @param target The target string affected by this operation.
      */

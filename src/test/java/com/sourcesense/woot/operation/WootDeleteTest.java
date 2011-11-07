@@ -17,7 +17,7 @@ public class WootDeleteTest {
 
     @Before
     public void setUp() throws Exception {
-        op = new WootDelete(createCharacter(1, 1L, true, 'a'));
+        op = new WootDelete(createCharacter(1, 1L, 'a', 1, true));
     }
 
     @Test
@@ -27,6 +27,7 @@ public class WootDeleteTest {
         assertEquals(1L, c.getId().getClock());
         assertTrue(c.isVisible());
         assertEquals('a', c.getValue());
+        assertEquals(1, c.getDegree());
     }
 
     @Test
@@ -37,22 +38,24 @@ public class WootDeleteTest {
     @Test
     public void executeDeleteOperation() throws Exception {
         WootString target = new WootString();
-        target.insert(createCharacter(1, 1L, true, 'a'), 1);
+        target.insert(createCharacter(1, 1L, 'a', 1, true), 1);
         assertEquals("a", target.value());
 
         op.execute(target);
 
         assertFalse(target.charIsVisible(1));
         assertEquals("", target.value());
+        assertEquals("[(a)]", target.toString());
     }
 
     @Test
     public void executingDeleteOnHiddenCharHasNoEffect() throws Exception {
         WootString target = new WootString();
-        target.insert(createCharacter(1, 0L, true, 'x'), 1);
-        target.insert(createCharacter(1, 1L, false, 'a'), 2);
-        target.insert(createCharacter(1, 2L, true, 'y'), 3);
+        target.insert(createCharacter(1, 0L, 'x', 1, true), 1);
+        target.insert(createCharacter(1, 1L, 'a', 1, false), 2);
+        target.insert(createCharacter(1, 2L, 'y', 1, true), 3);
         assertEquals("xy", target.value());
+        assertEquals("[x(a)y]", target.toString());
 
         op.execute(target);
 
