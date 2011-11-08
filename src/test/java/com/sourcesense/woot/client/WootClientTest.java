@@ -1,15 +1,14 @@
 package com.sourcesense.woot.client;
 
-import com.sourcesense.woot.model.WootCharacter;
 import com.sourcesense.woot.model.WootString;
 import com.sourcesense.woot.operation.WootOp;
-import com.sourcesense.woot.validation.PreconditionValidator;
 
 import org.junit.Before;
 import org.junit.Test;
 
 import static com.sourcesense.woot.model.WootCharacter.createCharacter;
 import static junit.framework.Assert.assertEquals;
+import static junit.framework.Assert.assertFalse;
 import static junit.framework.Assert.assertNotNull;
 import static junit.framework.Assert.assertTrue;
 
@@ -50,13 +49,13 @@ public class WootClientTest {
 
     @Test
     public void generatingAnInsertIncrementsTheClockByOne() throws Exception {
-        client.ins(1, 'a');
+        client.generateInsert(1, 'a');
         assertEquals(1L, client.getClock());
     }
 
     @Test
     public void clientGeneratesAValidInsertOperationForEmptyString() throws Exception {
-        WootOp op = client.ins(0, 'a');
+        WootOp op = client.generateInsert(0, 'a');
         assertTrue(client.getValidator().isExecutable(op, client.getString()));
         assertEquals("a", client.getString().value());
         assertEquals("[a]", client.getString().toString());
@@ -73,12 +72,54 @@ public class WootClientTest {
         assertEquals("abcde", s.value());
         assertEquals("[abcde]", s.toString());
 
-        WootOp op = client.ins(2, 'x');
+        WootOp op = client.generateInsert(2, 'x');
         assertTrue(client.getValidator().isExecutable(op, client.getString()));
         assertEquals("abcxde", client.getString().value());
 
-        op = client.ins(1, 'y');
+        op = client.generateInsert(1, 'y');
         assertTrue(client.getValidator().isExecutable(op, client.getString()));
         assertEquals("abycxde", client.getString().value());
+    }
+
+    @Test
+    public void generatingADeleteIncrementsTheClockByOne() throws Exception {
+        client.generateDelete(1);
+        assertEquals(1L, client.getClock());
+    }
+
+    @Test
+    public void clientGeneratesInvalidDeleteOpForSpecialChars() throws Exception {
+        WootOp op = client.generateDelete(0);
+        assertFalse(client.getValidator().isExecutable(op, client.getString()));
+
+        op = client.generateDelete(1);
+        assertFalse(client.getValidator().isExecutable(op, client.getString()));
+    }
+
+    @Test
+    public void clientGeneratesValidDeleteOpForShortString() throws Exception {
+        WootString s = client.getString();
+        s.insert(createCharacter(1, 0L, 'a', 1, true), 1);
+        s.insert(createCharacter(1, 1L, 'b', 1, true), 2);
+        s.insert(createCharacter(1, 2L, 'c', 1, true), 3);
+        s.insert(createCharacter(1, 3L, 'd', 1, true), 4);
+        s.insert(createCharacter(1, 4L, 'e', 1, true), 5);
+        assertEquals("abcde", s.value());
+        assertEquals("[abcde]", s.toString());
+
+        WootOp op = client.generateDelete(2);
+        assertTrue(client.getValidator().isExecutable(op, client.getString()));
+        assertEquals("abde", client.getString().value());
+        assertEquals("[ab(c)de]", client.getString().toString());
+
+        op = client.generateDelete(2);
+        assertTrue(client.getValidator().isExecutable(op, client.getString()));
+        assertEquals("abe", client.getString().value());
+        assertEquals("[ab(c)(d)e]", client.getString().toString());
+
+        op = client.generateDelete(0);
+        assertTrue(client.getValidator().isExecutable(op, client.getString()));
+        assertEquals("be", client.getString().value());
+        assertEquals("[(a)b(c)(d)e]", client.getString().toString());
     }
 }
